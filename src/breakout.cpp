@@ -1,142 +1,166 @@
 #include <iostream>
 
-#include "SDL2/SDL.h"  // NOLINT
+#include "Engine.h"
+#include "Game.h"
+#include "SFML/Graphics.hpp"
+#include "Util.h"
+#include "clock.h"
 
-#pragma warning(push)
-#pragma warning(disable : 4127)
-#include "fmt/format.h"  // NOLINT
-#pragma warning(pop)
+#include "nlohmann/json.hpp"
 
-template<typename... T> void UNUSED_ARGS(T&&...) {}  // NOLINT(readability-named-parameter)
+std::vector<nlohmann::json> g_traces;
 
-#if _DEBUG
-namespace Debug
+class IApplication
 {
-  template<typename... T> void Assert(bool condition, const char* str_condition, const char* format, T&&... args)
-  {
-    if (!condition)
+  public:
+    virtual ~IApplication()
     {
-      auto message = fmt::format(format, std::forward<T>(args)...);
-      fmt::print("Assertion: {} - {}\n", str_condition, message);
     }
-  }
+    virtual bool Init()     = 0;
+    virtual void Run()      = 0;
+    virtual void Shutdown() = 0;
+};
 
-#define Assert(condition, message, ...)                         \
-  if (!condition)                                               \
-  {                                                             \
-    static bool _local_enabled = true;                          \
-    Debug::Assert(condition, #condition, message, __VA_ARGS__); \
-    if (_local_enabled) { __debugbreak(); }                     \
-  }
-}  // namespace Debug
-#else
-#define Assert(...)
-#endif
-
-template<typename... T> void Message(T&&... args)
+class GameApplication : public IApplication
 {
-  fmt::print(
-      std::forward<T>(args)...);  // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay, hicpp-no-array-decay)
-}
-
-// screen dimension constants
-const int SCREEN_WIDTH  = 640;
-const int SCREEN_HEIGHT = 480;
-
-SDL_Window*   gWindow   = nullptr;
-SDL_Renderer* gRenderer = nullptr;
-
-// initialize sdl
-bool init()
-{
-  // result of initialization
-  bool success = true;
-
-  Message("Print {}\n", 10);
-  for (auto i = 0; i < 5; ++i) { Assert(false, "Print {}\n", 10); }
-
-  // Intialize SDL
-  if (SDL_Init(SDL_INIT_VIDEO) < 0)
-  {
-    fmt::print("SDL could not initialize! error: {}\n", SDL_GetError());
-    success = false;
-  }
-  else
-  {
-    // create window
-    gWindow = SDL_CreateWindow(
-        "SDL Skeleton", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
-
-    if (gWindow == nullptr)
+  public:
+    GameApplication();
+    virtual ~GameApplication()
     {
-      fmt::print("Window could not be created! error: {}\n", SDL_GetError());
-      success = false;
     }
-    else
-    {
-      // create renderer for window
-      gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED);
 
-      if (gRenderer == nullptr)
-      {
-        fmt::print("Renderer could not be created! error: {}\n", SDL_GetError());
-        success = false;
-      }
-      else
-      {
-        SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0);  // RGBA
-      }
-    }
-  }
+    // Create window and game
+    bool Init() override;
 
-  return success;
-}
+    void Run() override;
+    void Shutdown() override;
 
-void close()
-{
-  SDL_DestroyRenderer(gRenderer);
-  SDL_DestroyWindow(gWindow);
-  gRenderer = nullptr;
-  gWindow   = nullptr;
-
-  SDL_Quit();
-}
+  private:
+    std::shared_ptr<Breakout::Engine> engine;
+    std::shared_ptr<Breakout::Game>   game;
+    std::shared_ptr<sf::RenderWindow> mainWindow;
+};
 
 int main(int argc, char* argv[])
 {
-  UNUSED_ARGS(argc, argv);
+    UNUSED_ARGS(argc, argv);
 
-  if (!init()) { fmt::print("Failed to initialize!\n"); }
-  else
-  {
-    bool quit = false;
+    GameApplication app;
 
-    SDL_Event e;
-
-    while (!quit)
+    if (!app.Init())
     {
-      // handle event on queue
-      while (SDL_PollEvent(&e) != 0)
-      {
-        // user request to quit
-        if (e.type == SDL_QUIT) { quit = true; }
-
-        // clear screen
-        SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0);
-        SDL_RenderClear(gRenderer);
-
-        auto r = SDL_Rect{100, 100, 200, 200};
-
-        SDL_SetRenderDrawColor(gRenderer, 0, 0, 128, 0);
-        SDL_RenderFillRect(gRenderer, &r);
-
-        // update screen
-        SDL_RenderPresent(gRenderer);
-      }
+        fmt::print("Failed to initialize!\n");
+        return -1;
     }
-  }
 
-  close();
+    app.Run();
+    app.Shutdown();
 
-  return 0;
+    return 0;
+}
+
+GameApplication::GameApplication()
+{
+}
+
+bool GameApplication::Init()
+{
+    auto app_config = R"(
+    {
+        "app_name": "Breakout",
+        "width": 640,
+        "height": 480
+    }
+    )"_json;
+
+    std::string  app_name   = app_config["app_name"];
+    std::int32_t app_width  = app_config["width"];
+    std::int32_t app_height = app_config["height"];
+
+    Assert(app_width > 0, "Invalid app_width: {}", app_width);
+    Assert(app_height > 0, "Invalid app_height: {}", app_height);
+
+    mainWindow = std::make_shared<sf::RenderWindow>(sf::VideoMode(app_width, app_height), sf::String(app_name));
+    game       = std::make_shared<Breakout::BreakoutGame>();
+    game->Init(mainWindow);
+    engine = std::make_shared<Breakout::Engine>(mainWindow.get());
+
+    return true;
+}
+
+void GameApplication::Run()
+{
+    /*sf::CircleShape testCircle(1.f);  // Create circle of radius 1
+    testCircle.setScale(
+        sf::Vector2f(static_cast<float>(SCREEN_WIDTH) * 0.5f,
+                     static_cast<float>(SCREEN_HEIGHT) * 0.5f));  // Scale the circle to make an ellipses
+    testCircle.setFillColor(sf::Color::Green);*/
+
+    auto app_start_time = Time::GetTime();
+
+    game->BeginGame();
+
+    auto last_time     = Time::GetTime();
+    auto fps_counter   = 0;
+    auto seconds_timer = 0.0;
+
+    const auto kFpsTarget       = 60;
+    const auto kTargetFrameTime = 1.0 / kFpsTarget;
+
+    while (mainWindow->isOpen())
+    {
+        auto current_time = Time::GetTime();
+        auto elapsed_time = current_time - last_time;
+        last_time         = current_time;
+
+        seconds_timer += elapsed_time;
+
+        Assert(elapsed_time >= 0.0,
+               "Negative elapsed time: {} (current_time: {} last_time: {})",
+               elapsed_time,
+               current_time,
+               last_time);
+
+        // Report FPS
+        if (seconds_timer >= 1.0)
+        {
+            Message("FPS: {}\n", fps_counter);
+
+            fps_counter = 0;
+            seconds_timer -= 1.0;
+        }
+
+        // Report frame time spikes
+        if (elapsed_time > kTargetFrameTime)
+        {
+            Message("Warning @ {}s: Slow frame by {}s. (Elapsed: {}s Target: {}s)\n",
+                    current_time - app_start_time,
+                    elapsed_time - kTargetFrameTime,
+                    elapsed_time,
+                    kTargetFrameTime);
+        }
+
+        sf::Event sfEvent = {};
+        while (mainWindow->pollEvent(sfEvent))
+        {
+            if (sfEvent.type == sf::Event::Closed)
+            {
+                mainWindow->close();
+            }
+        }
+
+        mainWindow->clear();  // Remove all drawn content from window
+
+        engine->Update((float)elapsed_time, game->GetGameObjects());
+        game->Update((float)elapsed_time);
+
+        mainWindow->display();  // Present the window
+        fps_counter++;
+    }
+
+    game->EndGame();
+}
+
+void GameApplication::Shutdown()
+{
 }

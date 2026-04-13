@@ -1,9 +1,21 @@
 #include "Object.h"
+#include "Util.h"
 
 using Breakout::Object;
 
-Object::Object() : _pos({0, 0}) {}
+Object::Object()
+{
+}
 
-const SDL_Point& Object::GetPos() const { return _pos; }
+void Breakout::Object::AddComponent(std::shared_ptr<BaseComponent> component)
+{
+    components.push_back(component);
+}
 
-void Object::SetPos(const SDL_Point& pos) { _pos = pos; }
+void Breakout::Object::Update(float deltaTime)
+{
+    for (auto component : components)
+    {
+        component->Update(deltaTime);
+    }
+}

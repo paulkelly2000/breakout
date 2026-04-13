@@ -1,22 +1,37 @@
-#ifndef BREAKOUT_OBJECT_H
-#define BREAKOUT_OBJECT_H
+#pragma once
 
-#include "SDL2/SDL.h"
+#include <vector>
+#include "Component.h"
 
 namespace Breakout
 {
-  class Object
-  {
-    public:
-    Object();
-    virtual ~Object() = default;
+    class Object
+    {
+      public:
+        Object();
+        virtual ~Object() = default;
 
-    const SDL_Point& GetPos() const;
-    void             SetPos(const SDL_Point& pos);
+        template<typename T>
+        T* GetComponent() const
+        {
+            T* ret = nullptr;
 
-    private:
-    SDL_Point _pos;
-  };
+            for (auto& compIter : components)
+            {
+                if (auto component = dynamic_cast<T*>(compIter.get()))
+                {
+                    ret = component;
+                    break;
+                }
+            }
+
+            return ret;
+        }
+
+        void AddComponent(std::shared_ptr<BaseComponent> component);
+        void Update(float deltaTime);
+       
+      protected:
+        std::vector<std::shared_ptr<BaseComponent>> components;
+    };
 }  // namespace Breakout
-
-#endif  // !BREAKOUT_OBJECT_H

@@ -6,14 +6,53 @@ project(breakout LANGUAGES CXX)
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/install")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/install/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/install/bin")
 
-add_executable(breakout src/breakout.cpp src/Object.h src/Object.cpp src/Component.h src/Component.cpp)
+set(UNITY_BUILD TRUE)
 
-find_package(sdl2)
+set(BREAKOUT_FILES
+    src/breakout.cpp
+    src/Object.h
+    src/Object.cpp
+    src/Component.h
+    src/Component.cpp
+    src/Util.h
+    src/RenderSystem.h
+    src/RenderSystem.cpp
+    src/PhysicsSystem.h
+    src/PhysicsSystem.cpp
+    src/Engine.cpp
+    src/Engine.h
+    src/Game.cpp
+    src/Game.h
+    src/Math.cpp
+    src/Math.h
+    src/ObjectFactory.h
+    src/ObjectFactory.cpp
+    src/Clock.h
+    src/Clock.cpp
+    src/InputSystem.h
+    src/InputSystem.cpp
+    src/CollisionReaction.h
+    src/CollisionReaction.cpp)
+
+if(NOT UNITY_BUILD)
+    set(BUILD_FILES ${BREAKOUT_FILES})
+else(NOT UNITY_BUILD)
+    set_source_files_properties(${BREAKOUT_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set(BUILD_FILES src/unity_build.cpp ${BREAKOUT_FILES})
+endif(NOT UNITY_BUILD)
+
+add_executable(breakout ${BUILD_FILES})
+
 find_package(fmt)
-target_link_libraries(breakout sdl2::sdl2 fmt::fmt)
+find_package(sfml)
+find_package(jsonformoderncpp)
 
-target_compile_options(breakout PRIVATE "/W4" "/WX")
+target_link_libraries(breakout fmt::fmt sfml::sfml jsonformoderncpp::jsonformoderncpp)
+
+target_compile_options(breakout PRIVATE "/W4" "/WX" "/D_CRT_SECURE_NO_WARNINGS")
