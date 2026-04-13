@@ -1,11 +1,14 @@
 
-cmake_minimum_required(VERSION 3.10)
+# cmake must support Visual Studio 2022
+cmake_minimum_required(VERSION 3.21)
 project(breakout LANGUAGES CXX)
+add_definitions(-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING)
 
 # This line lets Conan take care of setting the dependencies lib and include paths
-set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan)
+# removed for 2.x migration - set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/install")
@@ -49,10 +52,15 @@ endif(NOT UNITY_BUILD)
 
 add_executable(breakout ${BUILD_FILES})
 
-find_package(fmt)
-find_package(sfml)
-find_package(jsonformoderncpp)
+find_package(fmt REQUIRED)
+# find_package(sfml)
+find_package(SDL3 REQUIRED)
+find_package(SFML REQUIRED COMPONENTS graphics window system)
+find_package(Catch2 REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
-target_link_libraries(breakout fmt::fmt sfml::sfml jsonformoderncpp::jsonformoderncpp)
+target_link_libraries(breakout PRIVATE fmt::fmt sfml::sfml nlohmann_json::nlohmann_json Catch2::Catch2WithMain)
 
-target_compile_options(breakout PRIVATE "/W4" "/WX" "/D_CRT_SECURE_NO_WARNINGS")
+if (MSVC)
+    target_compile_options(breakout PRIVATE "/W4" "/WX" "/D_CRT_SECURE_NO_WARNINGS")
+endif()

@@ -8,9 +8,10 @@ if not exist ..\..\build\makefiles (
 )
 
 pushd ..\..\build\debug
-cmake -G"Visual Studio 14 2015 Win64" ../..
+rem cmake -G"Visual Studio 14 2015 Win64" ../..
+cmake -G"Visual Studio 17 2022" ../..
 popd
 
-pushd ..\..\build\makefiles
-cmake -G"Unix Makefiles" ../..
-popd
+rem pushd ..\..\build\makefiles
+rem cmake -G"Unix Makefiles" ../..
+rem popd
