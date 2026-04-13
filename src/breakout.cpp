@@ -80,7 +80,7 @@ bool GameApplication::Init()
     Assert(app_width > 0, "Invalid app_width: {}", app_width);
     Assert(app_height > 0, "Invalid app_height: {}", app_height);
 
-    mainWindow = std::make_shared<sf::RenderWindow>(sf::VideoMode(app_width, app_height), sf::String(app_name));
+    mainWindow = std::make_shared<sf::RenderWindow>(sf::VideoMode(sf::Vector2u(app_width, app_height)), sf::String(app_name));
     game       = std::make_shared<Breakout::BreakoutGame>();
     game->Init(mainWindow);
     engine = std::make_shared<Breakout::Engine>(mainWindow.get());
@@ -140,10 +140,10 @@ void GameApplication::Run()
                     kTargetFrameTime);
         }
 
-        sf::Event sfEvent = {};
-        while (mainWindow->pollEvent(sfEvent))
+        //sf::Event sfEvent;
+        while (const std::optional sfEvent = mainWindow->pollEvent())
         {
-            if (sfEvent.type == sf::Event::Closed)
+            if (sfEvent->is<sf::Event::Closed>())
             {
                 mainWindow->close();
             }

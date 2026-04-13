@@ -188,10 +188,10 @@ Breakout::CollisionComponent::CollisionComponent(const std::weak_ptr<Object>&   
     collisionReaction(inCollisionReaction)
 {
     sf::Rect<float> collisionRect = inCollisionShape->getGlobalBounds();
-    aabb.pos.x = collisionRect.left + collisionRect.width / 2.f;
-    aabb.pos.y = collisionRect.top + collisionRect.height / 2.f;
-    aabb.half.x = collisionRect.width / 2.f;
-    aabb.half.y = collisionRect.height / 2.f;
+    aabb.pos.x = collisionRect.position.x + collisionRect.size.x / 2.f;
+    aabb.pos.y = collisionRect.position.y + collisionRect.size.y / 2.f;
+    aabb.half.x = collisionRect.size.x / 2.f;
+    aabb.half.y = collisionRect.size.y / 2.f;
 }
 
 CollisionComponent::~CollisionComponent()

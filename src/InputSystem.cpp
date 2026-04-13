@@ -27,8 +27,8 @@ void Breakout::InputSystem::Update(const std::vector<std::shared_ptr<Object>>& g
 
 void Breakout::InputSystem::UpdateInputs()
 {
-    currentInputs.moveLeft  = sf::Keyboard::isKeyPressed(sf::Keyboard::Left);
-    currentInputs.moveRight = sf::Keyboard::isKeyPressed(sf::Keyboard::Right);
-    currentInputs.action    = sf::Keyboard::isKeyPressed(sf::Keyboard::Space);
-    currentInputs.exit      = sf::Keyboard::isKeyPressed(sf::Keyboard::Escape);
+    currentInputs.moveLeft  = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left);
+    currentInputs.moveRight = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right);
+    currentInputs.action    = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space);
+    currentInputs.exit      = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Escape);
 }
